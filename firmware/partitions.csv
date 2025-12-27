@@ -1,0 +1,7 @@
+# Track Robot Partition Table
+# Name,   Type, SubType, Offset,  Size,     Flags
+nvs,      data, nvs,     0x9000,  0x4000,
+phy_init, data, phy,     0xd000,  0x1000,
+factory,  app,  factory, 0x10000, 0x200000,
+# Total: 2MB app partition + NVS + PHY = ~2.1MB
+# Remaining ~13.9MB available for future OTA partitions or storage

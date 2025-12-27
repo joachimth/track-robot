@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Robot - Web Flasher</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Track Robot Firmware Flasher</h1>
+            <p class="subtitle">Flash firmware to your ESP32-C5 directly from your browser</p>
+        </header>
+
+        <main>
+            <section class="info-card">
+                <h2>Before You Start</h2>
+                <ul>
+                    <li>✅ Use Chrome or Edge browser (Firefox/Safari not supported)</li>
+                    <li>✅ Connect ESP32-C5 via USB cable (data cable, not charge-only)</li>
+                    <li>✅ Install USB drivers if needed (CP210x or CH340)</li>
+                    <li>⚠️ All existing data on the ESP32 will be erased</li>
+                </ul>
+            </section>
+
+            <section class="flash-card">
+                <h2>Flash Firmware</h2>
+
+                <div class="version-selector">
+                    <label for="version">Select Version:</label>
+                    <select id="version" onchange="updateManifest()">
+                        <option value="">Loading versions...</option>
+                    </select>
+                </div>
+
+                <div id="flasher-container">
+                    <esp-web-install-button id="install-button">
+                        <button slot="activate" class="flash-button">
+                            <span class="button-icon">⚡</span>
+                            Connect and Install
+                        </button>
+                    </esp-web-install-button>
+                </div>
+
+                <div class="flash-steps">
+                    <h3>Installation Steps:</h3>
+                    <ol>
+                        <li>Select firmware version above</li>
+                        <li>Click "Connect and Install"</li>
+                        <li>Select your ESP32 serial port</li>
+                        <li>Wait for installation to complete (~2 minutes)</li>
+                        <li>View logs and reset your device</li>
+                    </ol>
+                </div>
+            </section>
+
+            <section class="info-card">
+                <h2>Hardware Requirements</h2>
+                <ul>
+                    <li><strong>MCU:</strong> ESP32-C5 (Waveshare dev board recommended)</li>
+                    <li><strong>Motors:</strong> 2x DC motors with BTS7960 H-bridge drivers</li>
+                    <li><strong>Power:</strong> 12V battery (Milwaukee M12 or similar)</li>
+                    <li><strong>Controller:</strong> PS4 controller (BLE) or use Serial/HTTP</li>
+                </ul>
+                <a href="https://github.com/joachimth/track-robot" class="github-link" target="_blank">
+                    📖 Full Documentation on GitHub
+                </a>
+            </section>
+
+            <section class="info-card">
+                <h2>Alternative Flashing Methods</h2>
+                <details>
+                    <summary>Using esptool.py (Command Line)</summary>
+                    <div class="code-block">
+                        <pre>pip install esptool
+esptool.py --chip esp32c5 --port /dev/ttyUSB0 \
+  write_flash 0x0 merged-firmware-vX.Y.Z.bin</pre>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Using ESP-IDF</summary>
+                    <div class="code-block">
+                        <pre>cd firmware
+idf.py set-target esp32c5
+idf.py build flash monitor</pre>
+                    </div>
+                </details>
+            </section>
+
+            <section class="info-card troubleshooting">
+                <h2>Troubleshooting</h2>
+                <details>
+                    <summary>❌ "No port selected" or can't connect</summary>
+                    <ul>
+                        <li>Install USB drivers (CP210x or CH340 depending on your board)</li>
+                        <li>Try a different USB cable (must be data cable)</li>
+                        <li>Check that no other program is using the serial port</li>
+                        <li>Try a different USB port</li>
+                    </ul>
+                </details>
+
+                <details>
+                    <summary>❌ "Failed to connect" or timeout errors</summary>
+                    <ul>
+                        <li>Hold BOOT button on ESP32 while connecting</li>
+                        <li>Power cycle the ESP32 (unplug and replug)</li>
+                        <li>Check that you selected the correct port</li>
+                    </ul>
+                </details>
+
+                <details>
+                    <summary>❌ "Browser not supported"</summary>
+                    <ul>
+                        <li>Use Google Chrome or Microsoft Edge (latest version)</li>
+                        <li>Enable "Experimental Web Platform features" in chrome://flags</li>
+                        <li>Firefox and Safari do not support Web Serial API</li>
+                    </ul>
+                </details>
+            </section>
+        </main>
+
+        <footer>
+            <p>Track Robot Firmware - <a href="https://github.com/joachimth/track-robot">GitHub Repository</a></p>
+            <p class="version-info">Latest Version: <span id="latest-version">Loading...</span></p>
+        </footer>
+    </div>
+
+    <script>
+        let versions = [];
+
+        // Load available versions
+        async function loadVersions() {
+            try {
+                const response = await fetch('versions.json');
+                const data = await response.json();
+                versions = data.versions || [];
+
+                const versionSelect = document.getElementById('version');
+                versionSelect.innerHTML = '';
+
+                if (versions.length === 0) {
+                    versionSelect.innerHTML = '<option value="">No versions available</option>';
+                    return;
+                }
+
+                // Add versions to dropdown
+                versions.forEach(v => {
+                    const option = document.createElement('option');
+                    option.value = v.manifest;
+                    option.textContent = `${v.version} (${v.date})`;
+                    versionSelect.appendChild(option);
+                });
+
+                // Select latest by default
+                if (data.latest) {
+                    document.getElementById('latest-version').textContent = data.latest;
+                    versionSelect.value = versions[0].manifest;
+                    updateManifest();
+                }
+            } catch (error) {
+                console.error('Failed to load versions:', error);
+                document.getElementById('version').innerHTML =
+                    '<option value="">Error loading versions</option>';
+            }
+        }
+
+        // Update ESP Web Tools manifest when version changes
+        function updateManifest() {
+            const versionSelect = document.getElementById('version');
+            const manifestPath = versionSelect.value;
+
+            if (!manifestPath) return;
+
+            const button = document.getElementById('install-button');
+            button.manifest = manifestPath;
+
+            console.log('Manifest updated:', manifestPath);
+        }
+
+        // Load versions on page load
+        window.addEventListener('load', loadVersions);
+    </script>
+</body>
+</html>

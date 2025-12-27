@@ -1,0 +1,39 @@
+# ESP-IDF Build Artifacts
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/.vscode/
+firmware/.devcontainer/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
+# Dependencies
+firmware/managed_components/
+firmware/dependencies.lock
+
+# Build artifacts
+*.bin
+*.elf
+*.map
+
+# Exceptions: keep release binaries in web-flasher
+!web-flasher/*.bin
+!web-flasher/firmware-*.bin

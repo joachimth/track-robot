@@ -1,0 +1,207 @@
+name: Release Firmware
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Setup ESP-IDF
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v5.3
+          target: esp32c5
+
+      - name: Build firmware
+        working-directory: firmware
+        shell: bash
+        run: |
+          . $IDF_PATH/export.sh
+          idf.py set-target esp32c5
+          idf.py build
+
+      - name: Prepare release binaries
+        working-directory: firmware/build
+        shell: bash
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+
+          # Rename main firmware with version
+          if [ -f "track-robot.bin" ]; then
+            cp track-robot.bin track-robot-${VERSION}.bin
+          fi
+
+          # Create merged firmware (all-in-one binary)
+          # Merge bootloader + partition table + app into single binary at offset 0x0
+          python -m esptool --chip esp32c5 merge_bin \
+            -o merged-firmware-${VERSION}.bin \
+            --flash_mode dio --flash_freq 40m --flash_size 16MB \
+            0x0 bootloader/bootloader.bin \
+            0x8000 partition_table/partition-table.bin \
+            0x10000 track-robot.bin
+
+          echo "Release binaries prepared:"
+          ls -lh *.bin
+
+      - name: Generate manifest.json
+        working-directory: firmware/build
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+
+          cat > manifest.json <<EOF
+          {
+            "name": "Track Robot Firmware",
+            "version": "${VERSION}",
+            "builds": [
+              {
+                "chipFamily": "ESP32-C5",
+                "parts": [
+                  {
+                    "path": "bootloader.bin",
+                    "offset": 0
+                  },
+                  {
+                    "path": "partition-table.bin",
+                    "offset": 32768
+                  },
+                  {
+                    "path": "track-robot-${VERSION}.bin",
+                    "offset": 65536
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+          echo "Manifest generated:"
+          cat manifest.json
+
+      - name: Create release notes
+        id: release_notes
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+
+          cat > release-notes.md <<EOF
+          # Track Robot Firmware ${VERSION}
+
+          ## What's New
+
+          This release includes firmware for ESP32-C5 tracked robot controller.
+
+          ## Installation
+
+          ### Option 1: Web Flasher (Easiest)
+          Visit https://joachimth.github.io/track-robot/ and click "Install"
+
+          ### Option 2: esptool.py
+          \`\`\`bash
+          esptool.py --chip esp32c5 --port /dev/ttyUSB0 write_flash 0x0 merged-firmware-${VERSION}.bin
+          \`\`\`
+
+          ### Option 3: ESP-IDF
+          \`\`\`bash
+          esptool.py --chip esp32c5 --port /dev/ttyUSB0 write_flash \\
+            0x0 bootloader.bin \\
+            0x8000 partition-table.bin \\
+            0x10000 track-robot-${VERSION}.bin
+          \`\`\`
+
+          ## Files
+
+          - \`merged-firmware-${VERSION}.bin\` - All-in-one binary (recommended)
+          - \`track-robot-${VERSION}.bin\` - Main application
+          - \`bootloader.bin\` - ESP32 bootloader
+          - \`partition-table.bin\` - Partition layout
+          - \`manifest.json\` - Web flasher metadata
+
+          ## Requirements
+
+          - ESP32-C5 dev board (Waveshare or compatible)
+          - 2x BTS7960 motor drivers
+          - 12V battery
+          - PS4 controller (BLE) OR use Serial/HTTP control
+
+          See README.md for full documentation.
+          EOF
+
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.version }}
+          body_path: release-notes.md
+          files: |
+            firmware/build/merged-firmware-${{ steps.get_version.outputs.version }}.bin
+            firmware/build/track-robot-${{ steps.get_version.outputs.version }}.bin
+            firmware/build/bootloader/bootloader.bin
+            firmware/build/partition_table/partition-table.bin
+            firmware/build/manifest.json
+          draft: false
+          prerelease: false
+
+      - name: Update web flasher
+        run: |
+          VERSION=${{ steps.get_version.outputs.version }}
+
+          # Create version directory
+          mkdir -p web-flasher/firmware/${VERSION}
+
+          # Copy binaries
+          cp firmware/build/merged-firmware-${VERSION}.bin web-flasher/firmware/${VERSION}/
+          cp firmware/build/bootloader/bootloader.bin web-flasher/firmware/${VERSION}/
+          cp firmware/build/partition_table/partition-table.bin web-flasher/firmware/${VERSION}/
+          cp firmware/build/track-robot-${VERSION}.bin web-flasher/firmware/${VERSION}/
+          cp firmware/build/manifest.json web-flasher/firmware/${VERSION}/
+
+          # Update versions.json (for web flasher version selector)
+          cat > web-flasher/versions.json <<EOF
+          {
+            "latest": "${VERSION}",
+            "versions": [
+              {
+                "version": "${VERSION}",
+                "date": "$(date -I)",
+                "manifest": "firmware/${VERSION}/manifest.json"
+              }
+            ]
+          }
+          EOF
+
+          echo "Web flasher updated with ${VERSION}"
+
+      - name: Commit web flasher updates
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add web-flasher/
+          git diff --staged --quiet || git commit -m "Release ${{ steps.get_version.outputs.version }}: Update web flasher"
+          git push origin HEAD:main || echo "No changes to push"
+
+      - name: Release summary
+        run: |
+          echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: ESP32-C5" >> $GITHUB_STEP_SUMMARY
+          echo "- **Release**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Flasher**: https://joachimth.github.io/track-robot/" >> $GITHUB_STEP_SUMMARY

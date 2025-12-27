@@ -1,0 +1,10 @@
+{
+  "latest": "v1.0.0",
+  "versions": [
+    {
+      "version": "v1.0.0",
+      "date": "2025-12-27",
+      "manifest": "firmware/v1.0.0/manifest.json"
+    }
+  ]
+}
