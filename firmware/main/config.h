@@ -122,6 +122,7 @@ typedef enum {
 // ============================================================================
 
 #define PS3_DEVICE_NAME          "Track Robot"  // Bluetooth device name
+#define PS3_DEADZONE             STICK_DEADZONE // PS3 controller deadzone (use same as mixer)
 
 // Button Mapping (DualShock 3)
 // X button = emergency stop
@@ -133,6 +134,8 @@ typedef enum {
 // ============================================================================
 
 #define SERIAL_UART_NUM          UART_NUM_1
+#define SERIAL_TX_PIN            PIN_SERIAL_TX     // Alias for controller_serial.c
+#define SERIAL_RX_PIN            PIN_SERIAL_RX     // Alias for controller_serial.c
 #define SERIAL_BAUD_RATE         115200
 #define SERIAL_BUF_SIZE          256
 #define SERIAL_CLI_MODE          false         // Enable CLI test mode

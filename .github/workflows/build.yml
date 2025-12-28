@@ -47,6 +47,15 @@ jobs:
           find . -name "CMakeLists.txt" -type f
           echo "IDF_PATH: $IDF_PATH"
 
+      - name: Clone PS3 library
+        working-directory: firmware
+        run: |
+          echo "Cloning PS3 controller library..."
+          mkdir -p components
+          git clone https://github.com/jvpernis/esp32-ps3.git components/ps3
+          echo "PS3 library cloned successfully"
+          ls -la components/
+
       - name: Build firmware
         working-directory: firmware
         shell: bash
