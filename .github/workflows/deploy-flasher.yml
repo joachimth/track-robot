@@ -1,0 +1,151 @@
+name: Build and Deploy ESP32 Flasher
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install ESP-IDF dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget flex bison gperf python3-pip python3-venv cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0
+
+      - name: Setup ESP-IDF
+        run: |
+          mkdir -p ~/esp
+          cd ~/esp
+          git clone -b v5.3.1 --recursive https://github.com/espressif/esp-idf.git
+          cd esp-idf
+          ./install.sh esp32s3
+          echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
+
+      - name: Build firmware
+        working-directory: firmware
+        shell: bash
+        run: |
+          . $HOME/esp/esp-idf/export.sh
+          idf.py set-target esp32s3
+          idf.py build
+
+      - name: Get version
+        id: version
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="v$(date +%Y%m%d)-${GITHUB_SHA::7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "date=$(date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Prepare web flasher deployment
+        run: |
+          # Create deployment directory
+          mkdir -p deploy/firmware/${{ steps.version.outputs.version }}
+
+          # Copy web flasher files
+          cp web-flasher/index.html deploy/
+          cp web-flasher/style.css deploy/
+
+          # Copy firmware binaries
+          cp firmware/build/bootloader/bootloader.bin deploy/firmware/${{ steps.version.outputs.version }}/
+          cp firmware/build/partition_table/partition-table.bin deploy/firmware/${{ steps.version.outputs.version }}/
+          cp firmware/build/track-robot.bin deploy/firmware/${{ steps.version.outputs.version }}/
+
+          # Get actual partition offsets from build
+          BOOTLOADER_OFFSET=0x0
+          PARTITION_OFFSET=0x8000
+          APP_OFFSET=0x10000
+
+          # Create manifest.json for ESP Web Tools
+          cat > deploy/firmware/${{ steps.version.outputs.version }}/manifest.json << EOF
+          {
+            "name": "Track Robot Firmware ${{ steps.version.outputs.version }}",
+            "version": "${{ steps.version.outputs.version }}",
+            "home_assistant_domain": "esphome",
+            "new_install_prompt_erase": true,
+            "builds": [
+              {
+                "chipFamily": "ESP32-S3",
+                "parts": [
+                  {
+                    "path": "bootloader.bin",
+                    "offset": $BOOTLOADER_OFFSET
+                  },
+                  {
+                    "path": "partition-table.bin",
+                    "offset": $PARTITION_OFFSET
+                  },
+                  {
+                    "path": "track-robot.bin",
+                    "offset": $APP_OFFSET
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+
+          # Create/update versions.json
+          cat > deploy/versions.json << EOF
+          {
+            "latest": "${{ steps.version.outputs.version }}",
+            "versions": [
+              {
+                "version": "${{ steps.version.outputs.version }}",
+                "date": "${{ steps.version.outputs.date }}",
+                "manifest": "firmware/${{ steps.version.outputs.version }}/manifest.json"
+              }
+            ]
+          }
+          EOF
+
+          # Add .nojekyll to prevent Jekyll processing
+          touch deploy/.nojekyll
+
+          echo "Deployment prepared for version ${{ steps.version.outputs.version }}"
+          ls -R deploy/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: deploy
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
