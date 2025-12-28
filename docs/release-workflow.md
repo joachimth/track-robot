@@ -450,14 +450,19 @@ jobs:
 
 ### Build Fails on GitHub Actions
 
-**Error:** `fatal error: 'esp_ps4_ctrl.h' file not found`
+**Error:** `fatal error: 'some_header.h' file not found`
 
-**Cause:** Missing ESP-IDF component dependency
+**Cause:** Missing ESP-IDF component dependency or header file
 
-**Solution:** Add to `firmware/main/idf_component.yml`:
-```yaml
-dependencies:
-  espressif/esp-ps4: "^1.0.0"
+**Solution:**
+1. Check if header is from an ESP-IDF component - add to `firmware/main/idf_component.yml`
+2. Check if it's a standard ESP-IDF header - add `#include` in source file
+3. Verify ESP-IDF version compatibility (requires v5.3+)
+
+**Common missing headers:**
+```c
+#include "esp_mac.h"      // For MAC address macros (MAC2STR, MACSTR)
+#include "esp_timer.h"    // For esp_timer_get_time()
 ```
 
 ---

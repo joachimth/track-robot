@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Serial control via UART (JSON and CLI modes)
 - HTTP API control over Wi-Fi (AP and STA modes)
 - Web-based control interface
-- PS4 controller support (stub, requires BLE implementation)
+- PS4 controller support via BLE
 - Motor ramping for smooth acceleration
 - Configurable PWM frequency (20kHz default)
 - Status LED patterns
@@ -26,16 +26,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation
 
 ### Changed
-- N/A (initial release)
+- Replaced PS3 controller library (incompatible with ESP32-C5) with PS4 stub implementation
 
 ### Deprecated
 - N/A
 
 ### Removed
-- N/A
+- Arduino PS3 library dependency (incompatible with ESP32-C5 BLE-only support)
 
 ### Fixed
-- N/A
+- Build errors related to missing ESP-IDF header includes (esp_mac.h, esp_timer.h)
+- Component dependency issues in idf_component.yml
 
 ### Security
 - N/A
