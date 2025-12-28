@@ -1,8 +1,8 @@
 /**
  * Track Robot Firmware - Main Entry Point
  *
- * ESP32-C5 tracked robot controller with multiple control interfaces:
- * - PS4 controller (Bluetooth LE) - Currently stubbed, see controller_ps4.c
+ * Heltec WiFi Kit 32 V3 (ESP32-S3) tracked robot controller with multiple control interfaces:
+ * - PS3 controller (Bluetooth Classic) - Fully functional
  * - Serial (UART) - Fully functional
  * - HTTP API (Wi-Fi) - Fully functional
  *
@@ -24,7 +24,7 @@
 #include "motor_bts7960.h"
 #include "mixer_diffdrive.h"
 #include "safety_failsafe.h"
-#include "controller_ps4.h"
+#include "controller_ps3.h"
 #include "controller_serial.h"
 #include "controller_http.h"
 
@@ -50,13 +50,13 @@ static void status_led_task(void *pvParameters) {
     while (1) {
         // Determine LED pattern based on system state
         safety_status_t status = safety_get_status();
-        bool ps4_connected = controller_ps4_is_connected();
+        bool ps3_connected = controller_ps3_is_connected();
 
         if (status == SAFETY_STATUS_ESTOP) {
             current_pattern = LED_PATTERN_ESTOP;
         } else if (status == SAFETY_STATUS_FAILSAFE) {
             current_pattern = LED_PATTERN_FAILSAFE;
-        } else if (ps4_connected) {
+        } else if (ps3_connected) {
             current_pattern = LED_PATTERN_CONNECTED;
         } else {
             current_pattern = LED_PATTERN_DISCONNECTED;
@@ -127,9 +127,9 @@ static void control_loop_task(void *pvParameters) {
         // Update safety monitoring
         safety_update();
 
-        // Update PS4 controller (if enabled)
-#if ENABLE_PS4_CONTROLLER
-        controller_ps4_update();
+        // Update PS3 controller (if enabled)
+#if ENABLE_PS3_CONTROLLER
+        controller_ps3_update();
 #endif
 
         // Log status periodically (every 1 second)
@@ -172,9 +172,9 @@ void app_main(void) {
     ESP_LOGI(TAG, "[2/5] Motor drivers");
     ESP_ERROR_CHECK(motor_init());
 
-    ESP_LOGI(TAG, "[3/5] PS4 controller");
-#if ENABLE_PS4_CONTROLLER
-    ESP_ERROR_CHECK(controller_ps4_init());
+    ESP_LOGI(TAG, "[3/5] PS3 controller");
+#if ENABLE_PS3_CONTROLLER
+    ESP_ERROR_CHECK(controller_ps3_init());
 #else
     ESP_LOGI(TAG, "  (disabled)");
 #endif
@@ -221,10 +221,10 @@ void app_main(void) {
 
     ESP_LOGI(TAG, "==================================================");
     ESP_LOGI(TAG, "  READY - Robot initialized successfully");
-    ESP_LOGI(TAG, "  Control: Serial=%s, HTTP=%s, PS4=%s",
+    ESP_LOGI(TAG, "  Control: Serial=%s, HTTP=%s, PS3=%s",
              ENABLE_SERIAL_CONTROL ? "ON" : "OFF",
              ENABLE_HTTP_CONTROL ? "ON" : "OFF",
-             ENABLE_PS4_CONTROLLER ? "ON" : "OFF");
+             ENABLE_PS3_CONTROLLER ? "ON" : "OFF");
     ESP_LOGI(TAG, "==================================================");
 
     // Main task complete - FreeRTOS scheduler now runs

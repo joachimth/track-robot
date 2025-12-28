@@ -168,7 +168,7 @@ void safety_update(void) {
 
 const char *safety_source_name(control_source_t source) {
     switch (source) {
-        case CONTROL_SOURCE_PS4:    return "PS4";
+        case CONTROL_SOURCE_PS3:    return "PS3";
         case CONTROL_SOURCE_HTTP:   return "HTTP";
         case CONTROL_SOURCE_SERIAL: return "Serial";
         case CONTROL_SOURCE_NONE:   return "None";

@@ -14,40 +14,45 @@
 // ============================================================================
 // FIRMWARE VERSION
 // ============================================================================
-#define FIRMWARE_VERSION "1.0.0"
+#define FIRMWARE_VERSION "1.1.0"
 #define BUILD_DATE __DATE__
 #define BUILD_TIME __TIME__
 
 // ============================================================================
 // FEATURE ENABLES
 // ============================================================================
-#define ENABLE_PS4_CONTROLLER    1    // PS4 BLE controller support
+#define ENABLE_PS3_CONTROLLER    1    // PS3 Bluetooth Classic controller support
 #define ENABLE_SERIAL_CONTROL    1    // UART serial control
 #define ENABLE_HTTP_CONTROL      1    // HTTP API control
 #define ENABLE_STATUS_LED        1    // Status LED indicator
 
 // ============================================================================
-// GPIO PIN ASSIGNMENTS (ESP32-C5)
+// GPIO PIN ASSIGNMENTS (Heltec WiFi Kit 32 V3 - ESP32-S3)
 // ============================================================================
+// Reserved pins on Heltec:
+// - GPIO17, GPIO18: OLED display (SDA, SCL)
+// - GPIO21: Vext (display power control)
+// - GPIO35: Built-in LED
+// - GPIO0: User button
 
 // Left Motor (BTS7960 #1)
-#define PIN_MOTOR_LEFT_RPWM      GPIO_NUM_4    // PWM forward
-#define PIN_MOTOR_LEFT_LPWM      GPIO_NUM_5    // PWM reverse
-#define PIN_MOTOR_LEFT_R_EN      GPIO_NUM_6    // Enable (optional, can tie to 5V)
-#define PIN_MOTOR_LEFT_L_EN      GPIO_NUM_7    // Enable (optional, can tie to 5V)
+#define PIN_MOTOR_LEFT_RPWM      GPIO_NUM_1    // PWM forward
+#define PIN_MOTOR_LEFT_LPWM      GPIO_NUM_2    // PWM reverse
+#define PIN_MOTOR_LEFT_R_EN      GPIO_NUM_3    // Enable (optional, can tie to 5V)
+#define PIN_MOTOR_LEFT_L_EN      GPIO_NUM_4    // Enable (optional, can tie to 5V)
 
 // Right Motor (BTS7960 #2)
-#define PIN_MOTOR_RIGHT_RPWM     GPIO_NUM_8    // PWM forward
-#define PIN_MOTOR_RIGHT_LPWM     GPIO_NUM_9    // PWM reverse
-#define PIN_MOTOR_RIGHT_R_EN     GPIO_NUM_10   // Enable (optional, can tie to 5V)
-#define PIN_MOTOR_RIGHT_L_EN     GPIO_NUM_11   // Enable (optional, can tie to 5V)
+#define PIN_MOTOR_RIGHT_RPWM     GPIO_NUM_5    // PWM forward
+#define PIN_MOTOR_RIGHT_LPWM     GPIO_NUM_6    // PWM reverse
+#define PIN_MOTOR_RIGHT_R_EN     GPIO_NUM_7    // Enable (optional, can tie to 5V)
+#define PIN_MOTOR_RIGHT_L_EN     GPIO_NUM_8    // Enable (optional, can tie to 5V)
 
-// Status LED
-#define PIN_STATUS_LED           GPIO_NUM_18
+// Status LED (use built-in LED on Heltec)
+#define PIN_STATUS_LED           GPIO_NUM_35
 
-// Serial Control (UART1)
-#define PIN_SERIAL_TX            GPIO_NUM_20
-#define PIN_SERIAL_RX            GPIO_NUM_21
+// Serial Control (UART1) - avoid GPIO17/18 (OLED)
+#define PIN_SERIAL_TX            GPIO_NUM_9
+#define PIN_SERIAL_RX            GPIO_NUM_10
 
 // ============================================================================
 // MOTOR CONTROL PARAMETERS
@@ -102,31 +107,26 @@
 
 // Control Source Priority (0 = highest, 2 = lowest)
 typedef enum {
-    CONTROL_SOURCE_PS4,
+    CONTROL_SOURCE_PS3,
     CONTROL_SOURCE_HTTP,
     CONTROL_SOURCE_SERIAL,
     CONTROL_SOURCE_NONE
 } control_source_t;
 
-#define CONTROL_SOURCE_PRIORITY_0  CONTROL_SOURCE_PS4     // Highest priority
+#define CONTROL_SOURCE_PRIORITY_0  CONTROL_SOURCE_PS3     // Highest priority
 #define CONTROL_SOURCE_PRIORITY_1  CONTROL_SOURCE_HTTP
 #define CONTROL_SOURCE_PRIORITY_2  CONTROL_SOURCE_SERIAL  // Lowest priority
 
 // ============================================================================
-// PS4 CONTROLLER CONFIGURATION
+// PS3 CONTROLLER CONFIGURATION
 // ============================================================================
 
-#define PS4_DEVICE_NAME          "Track Robot"  // Bluetooth device name
-#define PS4_RECONNECT_TIMEOUT_MS 10000          // Reconnect timeout (10 sec)
+#define PS3_DEVICE_NAME          "Track Robot"  // Bluetooth device name
 
-// Button Mapping
-#define PS4_BTN_ESTOP            PS4_BUTTON_CROSS      // X button = emergency stop
-#define PS4_BTN_ENABLE           PS4_BUTTON_START      // Start = enable after e-stop
-#define PS4_BTN_SLOW_MODE        PS4_BUTTON_TRIANGLE   // Triangle = toggle slow mode
-
-// Stick Mapping
-#define PS4_STICK_THROTTLE       PS4_ANALOG_STICK_LY   // Left stick Y = forward/back
-#define PS4_STICK_STEERING       PS4_ANALOG_STICK_RX   // Right stick X = turn
+// Button Mapping (DualShock 3)
+// X button = emergency stop
+// Start button = enable after e-stop
+// Triangle button = toggle slow mode
 
 // ============================================================================
 // SERIAL CONTROL CONFIGURATION

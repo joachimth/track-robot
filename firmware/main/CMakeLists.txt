@@ -6,7 +6,7 @@ idf_component_register(
         "motor_bts7960.c"
         "mixer_diffdrive.c"
         "safety_failsafe.c"
-        "controller_ps4.c"
+        "controller_ps3.c"
         "controller_serial.c"
         "controller_http.c"
     INCLUDE_DIRS
@@ -19,4 +19,5 @@ idf_component_register(
         esp_netif       # Network interface
         nvs_flash       # Non-volatile storage
         json            # cJSON library
+        bt              # Bluetooth for PS3 controller
 )
