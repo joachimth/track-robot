@@ -35,9 +35,8 @@ jobs:
         shell: bash
         run: |
           . $IDF_PATH/export.sh
-          cd firmware
-          idf.py set-target esp32s3
-          idf.py build
+          idf.py -C firmware set-target esp32s3
+          idf.py -C firmware build
 
       - name: Prepare release binaries
         working-directory: firmware/build
