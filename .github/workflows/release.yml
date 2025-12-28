@@ -29,14 +29,14 @@ jobs:
         uses: espressif/esp-idf-ci-action@v1
         with:
           esp_idf_version: v5.3
-          target: esp32c5
+          target: esp32s3
 
       - name: Build firmware
         working-directory: firmware
         shell: bash
         run: |
           . $IDF_PATH/export.sh
-          idf.py set-target esp32c5
+          idf.py set-target esp32s3
           idf.py build
 
       - name: Prepare release binaries
@@ -52,9 +52,9 @@ jobs:
 
           # Create merged firmware (all-in-one binary)
           # Merge bootloader + partition table + app into single binary at offset 0x0
-          python -m esptool --chip esp32c5 merge_bin \
+          python -m esptool --chip esp32s3 merge_bin \
             -o merged-firmware-${VERSION}.bin \
-            --flash_mode dio --flash_freq 40m --flash_size 16MB \
+            --flash_mode qio --flash_freq 80m --flash_size 8MB \
             0x0 bootloader/bootloader.bin \
             0x8000 partition_table/partition-table.bin \
             0x10000 track-robot.bin
@@ -73,7 +73,7 @@ jobs:
             "version": "${VERSION}",
             "builds": [
               {
-                "chipFamily": "ESP32-C5",
+                "chipFamily": "ESP32-S3",
                 "parts": [
                   {
                     "path": "bootloader.bin",
@@ -106,7 +106,14 @@ jobs:
 
           ## What's New
 
-          This release includes firmware for ESP32-C5 tracked robot controller.
+          This release includes firmware for ESP32-S3 tracked robot controller with full PS3 support!
+
+          ## Hardware
+
+          - **MCU**: ESP32-S3 (Heltec WiFi Kit 32 V3 recommended)
+          - **Motors**: 2x DC motors with BTS7960 H-bridge drivers
+          - **Power**: 12V battery
+          - **Controller**: PS3 DualShock (Bluetooth Classic) OR Serial/HTTP
 
           ## Installation
 
@@ -115,12 +122,12 @@ jobs:
 
           ### Option 2: esptool.py
           \`\`\`bash
-          esptool.py --chip esp32c5 --port /dev/ttyUSB0 write_flash 0x0 merged-firmware-${VERSION}.bin
+          esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash 0x0 merged-firmware-${VERSION}.bin
           \`\`\`
 
           ### Option 3: ESP-IDF
           \`\`\`bash
-          esptool.py --chip esp32c5 --port /dev/ttyUSB0 write_flash \\
+          esptool.py --chip esp32s3 --port /dev/ttyUSB0 write_flash \\
             0x0 bootloader.bin \\
             0x8000 partition-table.bin \\
             0x10000 track-robot-${VERSION}.bin
@@ -134,14 +141,13 @@ jobs:
           - \`partition-table.bin\` - Partition layout
           - \`manifest.json\` - Web flasher metadata
 
-          ## Requirements
+          ## PS3 Controller Pairing
 
-          - ESP32-C5 dev board (Waveshare or compatible)
-          - 2x BTS7960 motor drivers
-          - 12V battery
-          - PS4 controller (BLE) OR use Serial/HTTP control
+          1. Flash firmware and note the ESP32 MAC address from serial console
+          2. Use SixaxisPairTool to set controller master address to ESP32 MAC
+          3. Press PS button to connect
 
-          See README.md for full documentation.
+          See README.md for full documentation and pairing instructions.
           EOF
 
           cat release-notes.md
@@ -202,6 +208,7 @@ jobs:
         run: |
           echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: ${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Target**: ESP32-C5" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: ESP32-S3 (Heltec WiFi Kit 32 V3)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Controller**: PS3 DualShock (Bluetooth Classic)" >> $GITHUB_STEP_SUMMARY
           echo "- **Release**: https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Web Flasher**: https://joachimth.github.io/track-robot/" >> $GITHUB_STEP_SUMMARY
