@@ -1,5 +1,4 @@
 # Component dependencies for PS3 controller support
 dependencies:
   jvpernis/esp32-ps3:
-    version: "^1.0.0"
     git: "https://github.com/jvpernis/esp32-ps3.git"
