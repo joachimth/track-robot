@@ -22,12 +22,24 @@ jobs:
           esp_idf_version: v5.3
           target: esp32s3
 
+      - name: Debug directory structure
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Repository contents:"
+          ls -la
+          echo "Firmware directory contents:"
+          ls -la firmware/ || echo "Firmware directory not found!"
+          echo "Checking for CMakeLists.txt:"
+          find . -name "CMakeLists.txt" -type f
+
       - name: Build firmware
+        working-directory: firmware
         shell: bash
         run: |
           . $IDF_PATH/export.sh
-          idf.py -C firmware set-target esp32s3
-          idf.py -C firmware build
+          idf.py set-target esp32s3
+          idf.py build
 
       - name: List build artifacts
         working-directory: firmware/build
