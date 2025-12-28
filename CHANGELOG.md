@@ -8,15 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial firmware implementation for ESP32-C5
+- Initial firmware implementation for ESP32-S3 (Heltec WiFi Kit 32 V3)
 - BTS7960 dual H-bridge motor driver support
 - Differential drive mixer with deadzone and expo
 - Safety features: emergency stop, failsafe timeout
-- Control source arbitration (PS4 > HTTP > Serial)
+- Control source arbitration (PS3 > HTTP > Serial)
 - Serial control via UART (JSON and CLI modes)
 - HTTP API control over Wi-Fi (AP and STA modes)
 - Web-based control interface
-- PS4 controller support via BLE
+- PS3 controller support via Bluetooth Classic (jvpernis/esp32-ps3 library)
 - Motor ramping for smooth acceleration
 - Configurable PWM frequency (20kHz default)
 - Status LED patterns
@@ -24,19 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GitHub Actions release workflow
 - Web flasher (GitHub Pages) using ESP Web Tools
 - Comprehensive documentation
+- idf_component.yml for dependency management
 
 ### Changed
-- Replaced PS3 controller library (incompatible with ESP32-C5) with PS4 stub implementation
+- Target platform: ESP32-S3 (Heltec WiFi Kit 32 V3) instead of ESP32-C5
+- Controller: PS3 (Bluetooth Classic) instead of PS4 (BLE)
+- Full PS3 controller implementation with event callbacks and button mapping
 
 ### Deprecated
 - N/A
 
 ### Removed
-- Arduino PS3 library dependency (incompatible with ESP32-C5 BLE-only support)
+- N/A
 
 ### Fixed
 - Build errors related to missing ESP-IDF header includes (esp_mac.h, esp_timer.h)
-- Component dependency issues in idf_component.yml
+- Math library include for fabs() in PS3 controller
 
 ### Security
 - N/A

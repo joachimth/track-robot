@@ -1,14 +1,14 @@
-# Tracked Robot Firmware (ESP32-C5)
+# Tracked Robot Firmware (ESP32-S3)
 
-Professional firmware for a tracked robot car controlled via **PS4 controller** (BLE), HTTP API, or Serial commands. Runs on ESP32-C5 with dual BTS7960 motor drivers.
+Professional firmware for a tracked robot car controlled via **PS3 controller** (Bluetooth Classic), HTTP API, or Serial commands. Runs on ESP32-S3 (Heltec WiFi Kit 32 V3) with dual BTS7960 motor drivers.
 
-> **⚠️ IMPORTANT**: This project uses **PS4 controller** (BLE) because ESP32-C5 only supports Bluetooth LE, not Bluetooth Classic (required by PS3). If you need PS3 support, use ESP32 or ESP32-S3 hardware instead. See [docs/architecture.md](docs/architecture.md) for details.
+> **✅ Hardware**: This project uses **Heltec WiFi Kit 32 V3** (ESP32-S3) which supports Bluetooth Classic for PS3 controllers. See [docs/architecture.md](docs/architecture.md) for details.
 
 ## Quick Start
 
 ### 1. Hardware Wiring
 
-| Component | Pin | ESP32-C5 GPIO | Notes |
+| Component | Pin | ESP32-S3 GPIO | Notes |
 |-----------|-----|---------------|-------|
 | **Left Motor BTS7960** | RPWM | GPIO4 | PWM forward |
 | | LPWM | GPIO5 | PWM reverse |
@@ -28,10 +28,10 @@ Milwaukee 12V Battery
   ├─→ BTS7960 #1 VCC (B+/B-)
   ├─→ BTS7960 #2 VCC (B+/B-)
   └─→ Buck Converter (12V → 5V)
-       └─→ ESP32-C5 5V input
+       └─→ ESP32-S3 5V input (or USB-C)
        └─→ BTS7960 VCC (logic, 5V)
 
-Common Ground: Battery (-) ─ BTS7960 GND ─ Buck GND ─ ESP32 GND
+Common Ground: Battery (-) ─ BTS7960 GND ─ Buck GND ─ ESP32-S3 GND
 ```
 
 - **Fuse**: 30A on 12V battery line (recommended)
@@ -42,14 +42,20 @@ Common Ground: Battery (-) ─ BTS7960 GND ─ Buck GND ─ ESP32 GND
 
 #### Option A: Web Flasher (Easiest)
 1. Go to **[https://joachimth.github.io/track-robot/](https://joachimth.github.io/track-robot/)** (GitHub Pages)
-2. Connect ESP32-C5 via USB
+2. Connect ESP32-S3 (Heltec WiFi Kit 32 V3) via USB-C
 3. Click "Connect" and select serial port
 4. Click "Install" and wait (~2 min)
 
 #### Option B: ESP-IDF Command Line
 ```bash
 cd firmware
-idf.py set-target esp32c5
+
+# Install PS3 library first (required)
+git clone https://github.com/jvpernis/esp32-ps3.git components/ps3
+# OR for ESP-IDF v5 compatibility:
+# git clone https://github.com/NSUHackspace/esp32-ps3-esp-idf-v5.git components/ps3
+
+idf.py set-target esp32s3
 idf.py menuconfig  # Configure Wi-Fi credentials
 idf.py build
 idf.py -p /dev/ttyUSB0 flash monitor
@@ -65,13 +71,16 @@ Edit `firmware/main/config.h` before building:
 
 Or use `idf.py menuconfig` → Component config → Track Robot Configuration
 
-### 4. Pair PS4 Controller
+### 4. Pair PS3 Controller
 
-1. Power on ESP32 (watch serial console for "BT Address: XX:XX:XX:XX:XX:XX")
-2. Put PS4 controller in pairing mode:
-   - Hold **SHARE + PS** buttons for 3 seconds
-   - Light bar flashes white
-3. Controller connects automatically (light bar turns blue)
+1. Power on ESP32-S3 (watch serial console for "BT Address: XX:XX:XX:XX:XX:XX")
+2. Pair PS3 controller using PC:
+   - **Windows**: Use [SixaxisPairTool](http://www.dancingpixelstudios.com/sixaxis-pair-tool/)
+   - **Linux/Mac**: Use sixpair utility
+   - Connect PS3 controller via USB
+   - Set "Master" address to ESP32's Bluetooth MAC (from serial console)
+   - Disconnect USB
+3. Press **PS button** on controller - LED 1 should light up solid
 4. Test controls (keep robot on blocks, wheels off ground):
    - **Left Stick Y**: Forward/backward
    - **Right Stick X**: Steering (turn)
@@ -120,10 +129,12 @@ See [docs/pwm-configuration.md](docs/pwm-configuration.md) for tuning guidance.
 
 ## Troubleshooting
 
-**PS4 Controller won't pair:**
-- Ensure ESP32 is powered and Bluetooth initialized (check serial logs)
+**PS3 Controller won't pair:**
+- Ensure ESP32-S3 is powered and Bluetooth initialized (check serial logs)
+- Verify you set the correct MAC address using SixaxisPairTool/sixpair
 - Reset controller: paperclip in small hole on back for 5 sec
-- Try USB cable pairing first (some controllers need initial USB pair)
+- Try a different USB cable when pairing (must be data cable)
+- Check serial console - should show "PS3 controller initialized, waiting for connection..."
 
 **Motors don't move:**
 - Check BTS7960 enable pins (must be HIGH, 5V)
@@ -151,7 +162,11 @@ See [docs/pwm-configuration.md](docs/pwm-configuration.md) for tuning guidance.
 ```bash
 git clone https://github.com/joachimth/track-robot.git
 cd track-robot/firmware
-idf.py set-target esp32c5
+
+# Install PS3 library (required)
+git clone https://github.com/jvpernis/esp32-ps3.git components/ps3
+
+idf.py set-target esp32s3
 idf.py build flash monitor
 ```
 
@@ -168,4 +183,4 @@ MIT License - see LICENSE file
 
 ## Credits
 
-Built with ESP-IDF v5.3+, designed for Waveshare ESP32-C5 dev board and BTS7960 motor drivers.
+Built with ESP-IDF v5.3+, designed for Heltec WiFi Kit 32 V3 (ESP32-S3) and BTS7960 motor drivers.

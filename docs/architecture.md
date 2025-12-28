@@ -2,21 +2,23 @@
 
 ## System Design Philosophy
 
-This firmware is designed for **modularity**, **safety**, and **extensibility**. Each control path (PS4, Serial, HTTP) is a first-class citizen that can be enabled/disabled independently. The architecture supports future expansion (e.g., encoders, sensors, autonomous modes).
+This firmware is designed for **modularity**, **safety**, and **extensibility**. Each control path (PS3, Serial, HTTP) is a first-class citizen that can be enabled/disabled independently. The architecture supports future expansion (e.g., encoders, sensors, autonomous modes).
 
-## Critical Hardware Limitation: PS3 vs PS4
+## Hardware Platform: ESP32-S3 (Heltec WiFi Kit 32 V3)
 
-**ESP32-C5 ONLY supports Bluetooth Low Energy (BLE 5.3), NOT Bluetooth Classic.**
+**This firmware runs on ESP32-S3 which supports Bluetooth Classic for PS3 controllers.**
 
-- **PS3 controllers** use Bluetooth Classic (HID profile) → ❌ NOT compatible with ESP32-C5
-- **PS4 controllers** use Bluetooth LE → ✅ Compatible with ESP32-C5
+- **PS3 controllers** use Bluetooth Classic (HID profile) → ✅ Fully compatible with ESP32-S3
+- **Hardware**: Heltec WiFi Kit 32 V3 (ESP32-S3 dual-core, 8MB Flash, 8MB PSRAM)
+- **Bluetooth**: Dual-mode (BLE + Classic) - ideal for PS3 controllers
 
-**Alternatives if you need PS3:**
-1. Switch to **ESP32** or **ESP32-S3** (both have Bluetooth Classic)
-2. Use a Bluetooth Classic-to-Serial bridge module
-3. Use Serial or HTTP control exclusively
+**Why ESP32-S3:**
+1. Bluetooth Classic support (required for PS3)
+2. Dual-core performance for concurrent Wi-Fi + Bluetooth
+3. Large memory (8MB PSRAM) for future expansion
+4. USB-C interface for easy programming and power
 
-This firmware implements **PS4 controller support** via BLE. The code structure is designed to be easily portable to ESP32/S3 if you switch hardware and want PS3 support.
+This firmware implements **PS3 controller support** via Bluetooth Classic using the jvpernis/esp32-ps3 library.
 
 ## Module Structure
 
@@ -29,9 +31,9 @@ This firmware implements **PS4 controller support** via BLE. The code structure 
       ┌──────┴──────┬──────────────┬─────────────┐
       │             │              │             │
 ┌─────▼─────┐ ┌────▼────┐ ┌───────▼──────┐ ┌────▼──────┐
-│ PS4       │ │ Serial  │ │ HTTP         │ │ Safety/   │
+│ PS3       │ │ Serial  │ │ HTTP         │ │ Safety/   │
 │ Controller│ │ Control │ │ API          │ │ Failsafe  │
-│ (BLE)     │ │ (UART)  │ │ (Wi-Fi)      │ │           │
+│ (BT)      │ │ (UART)  │ │ (Wi-Fi)      │ │           │
 └─────┬─────┘ └────┬────┘ └───────┬──────┘ └────┬──────┘
       │            │              │             │
       └────────────┴──────────────┴─────────────┘
@@ -194,19 +196,19 @@ See `firmware/partitions.csv`
 - **Priority**: Safety/failsafe = highest, control input = high, motor = high, HTTP = low
 
 ### Memory
-- **SRAM**: ~400KB available (ESP32-C5 has 512KB total)
+- **SRAM**: ~400KB available (ESP32-S3 has 512KB total)
 - **PSRAM**: 8MB available (for future features: logging, vision)
-- **Flash**: 16MB (plenty for firmware + future OTA)
+- **Flash**: 8MB (plenty for firmware + future OTA)
 
 ### Latency
-- **PS4 BLE**: ~10-20ms input latency (Bluetooth LE)
+- **PS3 Bluetooth Classic**: ~15-30ms input latency
 - **HTTP**: ~50-100ms (Wi-Fi + TCP overhead)
 - **Serial**: ~5ms (direct UART, minimal overhead)
 - **Control loop**: 20ms (50Hz update rate)
 
 ### Power Consumption
-- **ESP32-C5 idle**: ~20mA @ 5V
-- **ESP32-C5 active (BLE + Wi-Fi)**: ~100-150mA @ 5V
+- **ESP32-S3 idle**: ~20mA @ 5V
+- **ESP32-S3 active (Bluetooth Classic + Wi-Fi)**: ~100-180mA @ 5V
 - **Motors**: ~5-30A @ 12V (depending on load)
 
 **Battery life estimate (12V 6Ah):**

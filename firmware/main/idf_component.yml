@@ -1,0 +1,12 @@
+## IDF Component Manager Dependencies
+## https://docs.espressif.com/projects/idf-component-manager/
+
+dependencies:
+  ## PS3 controller library must be installed manually as it's not in the ESP Component Registry
+  ## Clone it to components/ps3: git clone https://github.com/jvpernis/esp32-ps3.git components/ps3
+  ## Or use NSUHackspace fork for ESP-IDF v5 compatibility:
+  ## git clone https://github.com/NSUHackspace/esp32-ps3-esp-idf-v5.git components/ps3
+
+  ## No other external dependencies required - all ESP-IDF components are built-in
+  idf:
+    version: ">=5.3.0"
