@@ -20,4 +20,5 @@ idf_component_register(
         nvs_flash       # Non-volatile storage
         json            # cJSON library
         bt              # Bluetooth for PS3 controller
+        ps3             # PS3 controller library (external component)
 )

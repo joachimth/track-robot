@@ -54,7 +54,12 @@ jobs:
           mkdir -p components
           git clone https://github.com/jvpernis/esp32-ps3.git components/ps3
           echo "PS3 library cloned successfully"
+          echo "Components directory structure:"
           ls -la components/
+          echo "PS3 component files:"
+          ls -la components/ps3/ || echo "PS3 directory not found!"
+          echo "Checking for ps3.h header:"
+          find components/ps3 -name "ps3.h" || echo "ps3.h not found!"
 
       - name: Build firmware
         working-directory: firmware
